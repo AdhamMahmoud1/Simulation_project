@@ -1,7 +1,13 @@
 import CarDealer
 import Order
-import Car
+
 import random
+
+HOLDING_COST = 1000
+NET_PROFIT_PER_CAR = 10000
+REVIEW_PERIOD = 3
+ORDER_COST = 20000
+
 class Simulation:
     def __init__(self):
         self.__carDealer = CarDealer.CarDealer()
@@ -10,122 +16,134 @@ class Simulation:
         self.__soldCars = 0
         self.__shortageDays = 0
         self.__shortageDaysList = list()
+        self.__leadTimes = list()
         self.__profitList = list()
         self.__inventory = list()
         self.__showRoom = list()
-        self.__orders = list()
-
+        
     def getCarDealer(self):
         return self.__carDealer
-
-    def getSold(self):
-        return self.__soldCars
-
-    def getShortageDays(self):
-        return self.__shortageDays
     
-    def getShortageDaysList(self):
-        return self.__shortageDaysList
-
-    def getProfitList(self):
-        return self.__profitList
-
-    def getInventory(self):
-        return self.__inventory
-
-    def getShowRoom(self):
-        return self.__showRoom
-
-    def setSold(self, sold):
-        self.__soldCars = sold
-
-    def setShortageDays(self, shortageDays):
-        self.__shortageDays = shortageDays
-
-    def setInventory(self, inventory):
-        self.__inventory = inventory
-
-    def setShowRoom(self, showRoom):
-        self.__showRoom = showRoom
-
-    def generateDemand(self):
+    def setDemand(self):
         randomProp = random.uniform(0, 1)
         if randomProp >= 0 and randomProp < 0.2:
-            return 0
+            self.__demand = 0
         elif randomProp >= 0.2 and randomProp < 0.54:
-            return 1
+            self.__demand =  1
         elif randomProp >= 0.54 and randomProp < 0.9:
-            return 2
+            self._demand =  2
         else:
-            return 3
-
-    def setDemand(self):
-        self.__demand = self.generateDemand()
+            self.__demand =  3
 
     def getDemand(self):
         return self.__demand
-
+    
     def getDemandList(self):
         return self.__demandList
-
+    
+    def getShortageDaysList(self):
+        return self.__shortageDaysList          
+    
+    def getProfitList(self):
+        return self.__profitList
+    
+    def getInventoryCapacity(self):
+        return self.__inventory
+    
+    def getShowRoomCapacity(self):
+        return self.__showRoom
+    
+    def calculateAverage(self, list):
+        return sum(list) / len(list)
+    
     def run(self):
         for i in range(1000):
             self.__carDealer = CarDealer.CarDealer()
-            self.__orders.append(Order.Order(5, 2))
-            profit = 0
-            shortageDays = 0
-            for day in range(1, 31):
-                o = 0
-                while len(self.__orders) > 0 and o < len(self.__orders):
-                    if self.__orders[o].getLeadTime() == 0:
-                        if (self.__orders[o].getQuantity() + self.__carDealer.getShowRoomCapacity()) <= 5:
-                            self.__carDealer.setShowRoomCapacity(self.__carDealer.getShowRoomCapacity() + self.__orders[o].getQuantity())
+            orderList =  list()
+            leadTimes = list()
+            orderList.append(Order.Order(5, 2))
+            self.__shortageDays = 0
+            self.__soldCars = 0
+            demandList = list()
+            profitList = list()
+            inventory = list()
+            showRoom = list()
+            holdingcost =  0
+            # simulating for 10 days
+            for day in range(1, 10):
+                # check if there is any order to be delivered
+                if len(orderList) > 0:
+                    for order in orderList:
+                        if order.getLeadTime() == 0:
+                            # deliver the order
+                            if order.getQuantity() + self.getCarDealer().getShowRoomCapacity() > 5 :
+                                self.getCarDealer().setShowRoomCapacity(5)
+                                order.setQuantity(order.getQuantity() - (5 - self.getCarDealer().getShowRoomCapacity()))
+                                self.getCarDealer().setInventoryCapacity(self.getCarDealer().getInventoryCapacity() + order.getQuantity())
+                            else:
+                                self.getCarDealer().setShowRoomCapacity(order.getQuantity() + self.getCarDealer().getShowRoomCapacity())
                         else:
-                            self.__orders[o].setQuantity(self.__orders[o].getQuantity() - (5 - self.__carDealer.getShowRoomCapacity()))
-                            self.__carDealer.setShowRoomCapacity(5)
-                            self.__carDealer.setInventory(self.__carDealer.getInventory() + self.__orders[o].getQuantity()) 
-
-                        self.__orders.remove(self.__orders[o])
-                    else:
-                        self.__orders[o].setLeadTime(self.__orders[o].getLeadTime() - 1)
-
-                
-                    o += 1
-                    
+                            # reduce the lead time
+                            order.setLeadTime(order.getLeadTime() - 1)
+                    # remove the delivered orders from the list
+                    for order in orderList:
+                        if order.getLeadTime() == 0:
+                            orderList.remove(order)
 
                 self.setDemand()
-                self.__demandList.append(self.getDemand())
-                if self.__demand <= self.__carDealer.getInventory():
-                    self.__carDealer.setInventory(
-                        self.__carDealer.getInventory() - self.__demand
-                    )
-                    self.__soldCars += self.__demand
-                else:
-                    self.__soldCars += self.__carDealer.getInventory()
+                demandList.append(self.getDemand())
+
+                if self.getDemand() <= self.getCarDealer().getInventoryCapacity():
+                    self.getCarDealer().setInventoryCapacity(self.getCarDealer().getInventoryCapacity() - self.getDemand())
+                    self.__soldCars += self.getDemand()
+                elif self.getDemand() > self.getCarDealer().getInventoryCapacity():
+                    self.__demand -= self.getCarDealer().getInventoryCapacity()
+                    self.getCarDealer().setInventoryCapacity(0)
+                    if self.getDemand() <= self.getCarDealer().getShowRoomCapacity():
+                        self.getCarDealer().setShowRoomCapacity(self.getCarDealer().getShowRoomCapacity() - self.getDemand())
+                        self.__soldCars += self.getDemand()
+                elif (self.getCarDealer().getInventoryCapacity() + self.getCarDealer().getShowRoomCapacity() == 0):
                     self.__shortageDays += 1
-                    self.__carDealer.setInventory(0)
+                
 
-                if self.__carDealer.getShowRoomCapacity() >= self.__demand:
-                    self.__carDealer.setShowRoomCapacity(self.__carDealer.getShowRoomCapacity() - self.__demand)
-                    self.__soldCars += self.__demand
-                else:
-                    self.__soldCars += self.__carDealer.getShowRoomCapacity()
-                    self.__carDealer.setShowRoomCapacity(0)
+                holdingcost += self.getCarDealer().getInventoryCapacity() * HOLDING_COST
 
-                order = Order.Order(0,0)
-                order.setQuantity(15 - self.__carDealer.getInventory() - self.__carDealer.getShowRoomCapacity())
-                order.setNewLeadTime()
-                self.__orders.append(order)
-                profit = self.__soldCars * Car.Car().getNetProfit()
+                # check if the review period is over
+                flag = 0
+                if (day % REVIEW_PERIOD == 0):
+                    order = Order.Order(0,0)
+                    order.setQuantity(15 - self.getCarDealer().getInventoryCapacity() - self.getCarDealer().getShowRoomCapacity())
+                    order.setNewLeadTime()
+                    leadTimes.append(order.getLeadTime())
+                    orderList.append(order)
+                    flag = 1
+                
+                profitList.append((self.__soldCars * NET_PROFIT_PER_CAR) - ( holdingcost * self.getCarDealer().getInventoryCapacity()) - (ORDER_COST * flag))
+                inventory.append(self.getCarDealer().getInventoryCapacity())
+                showRoom.append(self.getCarDealer().getShowRoomCapacity())
 
-                if (self.__carDealer.getInventory() + self.__carDealer.getShowRoomCapacity() == 0):
-                    shortageDays += 1
+            
+            self.__demandList.append(self.calculateAverage(demandList))
+            self.__profitList.append(self.calculateAverage(profitList))
+            self.__shortageDaysList.append(self.__shortageDays)
+            self.__inventory.append(self.calculateAverage(inventory))
+            self.__showRoom.append(self.calculateAverage(showRoom))
+            self.__leadTimes.append(self.calculateAverage(leadTimes))
+            
 
-            self.__profitList.append(profit)
-            self.__shortageDaysList.append(shortageDays)
-            self.__inventory.append(self.__carDealer.getInventory())
-            self.__showRoom.append(self.__carDealer.getShowRoomCapacity())
-            self.__soldCars = 0
-            self.__orders.clear()
+    def printResults(self):
+        print("Average demand: ", self.calculateAverage(self.__demandList))
+        print("Average profit: ", self.calculateAverage(self.__profitList))
+        print("Average shortage days: ", self.calculateAverage(self.__shortageDaysList))
+        print("Average inventory: ", self.calculateAverage(self.__inventory))
+        print("Average show room: ", self.calculateAverage(self.__showRoom))
+        print("Average lead times: ", self.calculateAverage(self.__leadTimes))
 
 
+
+                    
+                
+
+                
+                    
+                

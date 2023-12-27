@@ -6,6 +6,7 @@ class Order:
     def __init__(self, quantity, leadTime):
         self.__quantity = quantity
         self.__leadTime = leadTime
+        self.__ORDER_COST  = 20000
 
     def generateLeadTime(self):
         randomProp = random.uniform(0, 1)
@@ -25,6 +26,9 @@ class Order:
 
     def setQuantity(self, quantity):
         self.__quantity = quantity
+
+    def getOrderCost(self):
+        return self.__ORDER_COST
 
     def setNewLeadTime(self):
         self.__leadTime = self.generateLeadTime() + 3
