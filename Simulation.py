@@ -93,7 +93,9 @@ class Simulation:
                 self.setDemand()
                 demandList.append(self.getDemand())
 
-                if self.getDemand() <= self.getCarDealer().getInventoryCapacity():
+                if (self.getCarDealer().getInventoryCapacity() + self.getCarDealer().getShowRoomCapacity() == 0):
+                    self.__shortageDays += 1
+                elif self.getDemand() <= self.getCarDealer().getInventoryCapacity():
                     self.getCarDealer().setInventoryCapacity(self.getCarDealer().getInventoryCapacity() - self.getDemand())
                     self.__soldCars += self.getDemand()
                 elif self.getDemand() > self.getCarDealer().getInventoryCapacity():
@@ -102,10 +104,8 @@ class Simulation:
                     if self.getDemand() <= self.getCarDealer().getShowRoomCapacity():
                         self.getCarDealer().setShowRoomCapacity(self.getCarDealer().getShowRoomCapacity() - self.getDemand())
                         self.__soldCars += self.getDemand()
-                elif (self.getCarDealer().getInventoryCapacity() + self.getCarDealer().getShowRoomCapacity() == 0):
-                    self.__shortageDays += 1
                 
-
+                # calculate the holding cost
                 holdingcost += self.getCarDealer().getInventoryCapacity() * HOLDING_COST
 
                 # check if the review period is over
@@ -118,7 +118,7 @@ class Simulation:
                     orderList.append(order)
                     flag = 1
                 
-                profitList.append((self.__soldCars * NET_PROFIT_PER_CAR) - ( holdingcost * self.getCarDealer().getInventoryCapacity()) - (ORDER_COST * flag))
+                profitList.append((self.__soldCars * NET_PROFIT_PER_CAR) - ( holdingcost ) - (ORDER_COST * flag))
                 inventory.append(self.getCarDealer().getInventoryCapacity())
                 showRoom.append(self.getCarDealer().getShowRoomCapacity())
 
