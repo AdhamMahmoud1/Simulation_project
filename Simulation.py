@@ -3,6 +3,8 @@ import Order
 
 import random
 import matplotlib.pyplot as plt
+import tkinter as tk
+from tkinter import ttk
 
 HOLDING_COST = 1000
 NET_PROFIT_PER_CAR = 10000
@@ -76,14 +78,17 @@ class Simulation:
             loss = 0
             profit = 0
             # simulating for 10 days
-            for day in range(1, 10):
+            for day in range(1, 11):
                 # check if there is any order to be delivered
                 if len(orderList) > 0:
                     for order in orderList:
                         if order.getLeadTime() == 0:
                             # deliver the order
                             if (
-                                order.getQuantity()+ self.getCarDealer().getShowRoomCapacity()> 5):
+                                order.getQuantity()
+                                + self.getCarDealer().getShowRoomCapacity()
+                                > 5
+                            ):
                                 self.getCarDealer().setShowRoomCapacity(5)
                                 order.setQuantity(
                                     order.getQuantity()
@@ -124,7 +129,9 @@ class Simulation:
                     self.__demand -= self.getCarDealer().getInventoryCapacity()
                     self.getCarDealer().setInventoryCapacity(0)
                     if self.getDemand() <= self.getCarDealer().getShowRoomCapacity():
-                        self.getCarDealer().setShowRoomCapacity(self.getCarDealer().getShowRoomCapacity() - self.getDemand())
+                        self.getCarDealer().setShowRoomCapacity(
+                            self.getCarDealer().getShowRoomCapacity() - self.getDemand()
+                        )
                         self.__soldCars += self.getDemand()
 
                 # calculate the holding cost
@@ -134,17 +141,29 @@ class Simulation:
                 flag = 0
                 if day % REVIEW_PERIOD == 0:
                     order = Order.Order(0, 0)
-                    order.setQuantity(15 - self.getCarDealer().getInventoryCapacity() - self.getCarDealer().getShowRoomCapacity())
+                    order.setQuantity(
+                        15
+                        - self.getCarDealer().getInventoryCapacity()
+                        - self.getCarDealer().getShowRoomCapacity()
+                    )
                     order.setNewLeadTime()
                     leadTimes.append(order.getLeadTime())
                     orderList.append(order)
                     flag = 1
-                
-                if ((self.__soldCars * NET_PROFIT_PER_CAR)- (holdingcost) - (ORDER_COST * flag)) < 0:
+
+                if (
+                    (self.__soldCars * NET_PROFIT_PER_CAR)
+                    - (holdingcost)
+                    - (ORDER_COST * flag)
+                ) < 0:
                     loss += 1
                 else:
                     profit += 1
-                profitList.append((self.__soldCars * NET_PROFIT_PER_CAR)- (holdingcost) - (ORDER_COST * flag))
+                profitList.append(
+                    (self.__soldCars * NET_PROFIT_PER_CAR)
+                    - (holdingcost)
+                    - (ORDER_COST * flag)
+                )
                 inventory.append(self.getCarDealer().getInventoryCapacity())
                 showRoom.append(self.getCarDealer().getShowRoomCapacity())
 
@@ -157,15 +176,20 @@ class Simulation:
             self.__lossDaysList.append(loss)
             self.__profitdaysList.append(profit)
 
-
     def theoricalAveargeDemand(self):
         theoricalAverage = (0 * 0.2) + (1 * 0.34) + (2 * 0.36) + (3 * 0.1)
-        percentError = (abs(theoricalAverage - self.calculateAverage(self.__demandList)) / theoricalAverage) * 100
+        percentError = (
+            abs(theoricalAverage - self.calculateAverage(self.__demandList))
+            / theoricalAverage
+        ) * 100
         return percentError
-    
+
     def theoricalAveargeLeadTime(self):
         theoricalAverage = (1 * 0.4) + (2 * 0.35) + (3 * 0.25)
-        percentError = (abs(theoricalAverage - self.calculateAverage(self.__leadTimes)) / theoricalAverage) * 100
+        percentError = (
+            abs(theoricalAverage - self.calculateAverage(self.__leadTimes))
+            / theoricalAverage
+        ) * 100
         return percentError
 
     def printResults(self):
@@ -175,11 +199,12 @@ class Simulation:
         print("Average inventory: ", self.calculateAverage(self.__inventory))
         print("Average show room: ", self.calculateAverage(self.__showRoom))
         print("Average lead times: ", self.calculateAverage(self.__leadTimes))
-        print("Percentage of Profit: ", self.calculateAverage(self.__profitdaysList) / 10)
+        print(
+            "Percentage of Profit: ", self.calculateAverage(self.__profitdaysList) / 10
+        )
         print("Percentage of Loss: ", self.calculateAverage(self.__lossDaysList) / 10)
         print("Theorical Average Demand: ", self.theoricalAveargeDemand())
         print("Theorical Average Lead Time: ", self.theoricalAveargeLeadTime())
-
 
     def printHistoGrams(self):
         plt.hist(self.__demandList, bins=20)
@@ -218,5 +243,43 @@ class Simulation:
         plt.title("Histogram of Show Room")
         plt.show()
 
+    def display_simulation_results(self):
+        root = tk.Tk()
+        tree = ttk.Treeview(root)
+        tree["columns"] = (
+            "Average Demand",
+            "Average Profit",
+            "Average Shortage Days",
+            "Average Inventory",
+            "Average Show Room",
+            "Average Lead Times",
+            "Percentage of Profit",
+            "Percentage of Loss",
+        )
+        for column in tree["columns"]:
+            tree.heading(column, text=column)
+
+        for i in range(10):
+            tree.insert(
+                "",
+                "end",
+                text=f"Simulation {i+1}",
+                values=(
+                    self.getDemandList()[i],
+                    self.getProfitList()[i],
+                    self.getShortageDaysList()[i],
+                    self.getInventoryCapacity()[i],
+                    self.getShowRoomCapacity()[i],
+                    self.calculateAverage(self.__leadTimes),
+                    self.calculateAverage(self.__profitdaysList) / 10,
+                    self.calculateAverage(self.__lossDaysList) / 10,
+                ),
+            )
+
+        tree.pack()
+        root.mainloop()
 
 
+# Usage:
+# simulation = Simulation()
+# simulation.run()
