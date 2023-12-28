@@ -83,10 +83,7 @@ class Simulation:
                         if order.getLeadTime() == 0:
                             # deliver the order
                             if (
-                                order.getQuantity()
-                                + self.getCarDealer().getShowRoomCapacity()
-                                > 5
-                            ):
+                                order.getQuantity()+ self.getCarDealer().getShowRoomCapacity()> 5):
                                 self.getCarDealer().setShowRoomCapacity(5)
                                 order.setQuantity(
                                     order.getQuantity()
@@ -160,6 +157,17 @@ class Simulation:
             self.__lossDaysList.append(loss)
             self.__profitdaysList.append(profit)
 
+
+    def theoricalAveargeDemand(self):
+        theoricalAverage = (0 * 0.2) + (1 * 0.34) + (2 * 0.36) + (3 * 0.1)
+        percentError = (abs(theoricalAverage - self.calculateAverage(self.__demandList)) / theoricalAverage) * 100
+        return percentError
+    
+    def theoricalAveargeLeadTime(self):
+        theoricalAverage = (1 * 0.4) + (2 * 0.35) + (3 * 0.25)
+        percentError = (abs(theoricalAverage - self.calculateAverage(self.__leadTimes)) / theoricalAverage) * 100
+        return percentError
+
     def printResults(self):
         print("Average demand: ", self.calculateAverage(self.__demandList))
         print("Average profit: ", self.calculateAverage(self.__profitList))
@@ -169,6 +177,9 @@ class Simulation:
         print("Average lead times: ", self.calculateAverage(self.__leadTimes))
         print("Percentage of Profit: ", self.calculateAverage(self.__profitdaysList) / 10)
         print("Percentage of Loss: ", self.calculateAverage(self.__lossDaysList) / 10)
+        print("Theorical Average Demand: ", self.theoricalAveargeDemand())
+        print("Theorical Average Lead Time: ", self.theoricalAveargeLeadTime())
+
 
     def printHistoGrams(self):
         plt.hist(self.__demandList, bins=20)
