@@ -31,7 +31,7 @@ class Order:
         return self.__ORDER_COST
 
     def setNewLeadTime(self):
-        self.__leadTime = self.generateLeadTime() + 3
+        self.__leadTime = self.generateLeadTime()
 
     def setLeadTime(self, time):
         self.__leadTime = time
